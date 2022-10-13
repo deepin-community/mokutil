@@ -1,0 +1,22 @@
+Description: Fix compile failure on platforms where int != unsigned int
+ The compiler may rightly warn about a comparison between an unsigned int
+ and an int on architectures where int is signed by default.  Since the
+ existing code has been tested on architectures where int *is* unsigned,
+ we just make our other int explicitly unsigned, ignoring certain existing
+ corner cases for now wrt possible integer underflows.
+Author: Steve Langasek <steve.langasek@canonical.com>
+Last-Updated: 2018-10-10
+
+Index: mokutil-0.3.0+1538710437.fb6250f/src/mokutil.c
+===================================================================
+--- mokutil-0.3.0+1538710437.fb6250f.orig/src/mokutil.c
++++ mokutil-0.3.0+1538710437.fb6250f/src/mokutil.c
+@@ -2005,7 +2005,7 @@
+ 	char *password = NULL;
+ 	char *crypt_string;
+ 	const char *prefix;
+-	int settings_len = sizeof (settings) - 2;
++	unsigned int settings_len = sizeof (settings) - 2;
+ 	unsigned int pw_len, salt_size;
+ 
+ 	if (input_pw) {

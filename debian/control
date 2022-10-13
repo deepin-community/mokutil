@@ -1,0 +1,16 @@
+Source: mokutil
+Section: admin
+Priority: optional
+Maintainer: Debian UEFI Maintainers <debian-efi@lists.debian.org>
+Uploaders: Steve McIntyre <93sam@debian.org>, Simon Quigley <tsimonq2@debian.org>
+Standards-Version: 4.5.1
+Build-Depends: debhelper (>= 13), libssl-dev, pkg-config, libefivar-dev
+Vcs-Browser: https://salsa.debian.org/efi-team/mokutil
+Vcs-Git: https://salsa.debian.org/efi-team/mokutil.git
+
+Package: mokutil
+Architecture: any-amd64 any-arm any-arm64 any-i386 any-ia64
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: tools for manipulating machine owner keys
+ This program provides the means to enroll and erase the machine owner
+ keys (MOK) stored in the database of shim.

@@ -1,0 +1,107 @@
+mokutil (0.4.0-1) unstable; urgency=medium
+
+  * Take mokutil under the wing of efi-team.
+    Thanks to Simon for his work previously, added him as an uploader
+  * Import the upstream source
+  * Move to new upstream version 0.4.0. Closes: #925223
+    + Includes manpage fixes. Closes: #930759
+  * Fix compiler warnings about potential unaligned pointers
+  * Update packaging:
+    + Raise debhelper-compat to 13
+    + Raise Standards-Version to 4.5.1
+    + Remove now-redundant build-dep on dh-autoreconf
+
+ -- Steve McIntyre <93sam@debian.org>  Sun, 25 Apr 2021 21:47:18 +0100
+
+mokutil (0.3.0+1538710437.fb6250f-1) unstable; urgency=medium
+
+  * Upload to Debian (Closes: #925471).
+  * Adopt the package; thanks to Steve Langasek for your work!
+  * Update Vcs-* to reflect the move to Salsa.
+
+ -- Simon Quigley <tsimonq2@debian.org>  Fri, 12 Apr 2019 17:45:52 -0500
+
+mokutil (0.3.0+1538710437.fb6250f-0ubuntu2) cosmic; urgency=medium
+
+  * debian/patches/int-signedness.patch: Fix compile failure on
+    platforms where int != unsigned int.
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Wed, 10 Oct 2018 22:41:15 -0700
+
+mokutil (0.3.0+1538710437.fb6250f-0ubuntu1) cosmic; urgency=medium
+
+  * New upstream snapshot. (LP: #1797011)
+    - Add support for --export to export arbitrary firmware keyrings.
+    - Improved output for --sb-state.
+    - Fix help for --timeout
+    - Various bugfixes.
+
+ -- Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>  Tue, 09 Oct 2018 20:43:25 -0400
+
+mokutil (0.3.0+1531796165.cca7219-0ubuntu1) cosmic; urgency=medium
+
+  * New upstream snapshot.
+
+ -- Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>  Wed, 29 Aug 2018 16:30:18 -0400
+
+mokutil (0.3.0-0ubuntu5) bionic; urgency=high
+
+  * No change rebuild against openssl1.1.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 05 Feb 2018 16:51:07 +0000
+
+mokutil (0.3.0-0ubuntu4) zesty; urgency=medium
+
+  * Rebuild against efivar 30-1ubuntu1.
+  * debian/patches/efivar-30-support.patch: port to efivar 30; where the API
+    for efi_set_variable() requires a mode to be specified.
+
+ -- Mathieu Trudel-Lapierre <cyphermox@ubuntu.com>  Fri, 04 Nov 2016 16:09:31 -0600
+
+mokutil (0.3.0-0ubuntu3) xenial; urgency=medium
+
+  * Fix toggles working inconsistently by backporting 2 more commits
+    from upstream.
+
+ -- Mario Limonciello <mario_limonciello@dell.com>  Fri, 25 Mar 2016 13:23:07 -0500
+
+mokutil (0.3.0-0ubuntu2) xenial; urgency=medium
+
+  * Backport buffer overflow patch from upstream (LP: #1562006)
+  * update debian/changelog for OpenSSL exception upstream.
+
+ -- Mario Limonciello <mario_limonciello@dell.com>  Sat, 26 Mar 2016 02:03:04 +0800
+
+mokutil (0.3.0-0ubuntu1) xenial; urgency=medium
+
+  * New upstream version.
+    - Now uses efivar which supports immutable attributes (LP: #1560764)
+  * B-D on libefivar-dev, dh-autoreconf
+  * debian/rules: use autoreconf
+  * Backport cdb4b6f3 from upstream to fix i386 builds.
+
+ -- Mario Limonciello <mario_limonciello@dell.com>  Tue, 22 Mar 2016 21:25:22 -0500
+
+mokutil (0.2.0-1ubuntu1) xenial; urgency=medium
+
+  * debian/control: Build on i386, ia64, arm, and arm64 too.
+
+ -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Tue, 15 Mar 2016 11:46:08 -0400
+
+mokutil (0.2.0-1) unstable; urgency=low
+
+  * Upload to Debian.
+
+ -- Steve Langasek <vorlon@debian.org>  Fri, 20 Sep 2013 00:36:04 -0500
+
+mokutil (0.2.0-0ubuntu2) saucy; urgency=low
+
+  * Add missing build-dependency on pkg-config.
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Thu, 19 Sep 2013 15:56:59 -0500
+
+mokutil (0.2.0-0ubuntu1) saucy; urgency=low
+
+  * Initial packaging.
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Thu, 19 Sep 2013 20:00:06 +0000

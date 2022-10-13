@@ -1,0 +1,60 @@
+Fix compiler warnings about potential unaligned pointers
+
+The compiler has no way to know if the efi_guid_t struct pointers are
+aligned here. Copy the struct data to an aligned temporary buffer in
+the cases where we need this.
+
+Signed-off-by: Steve McIntyre <93sam@debian.org>
+
+diff --git a/src/mokutil.c b/src/mokutil.c
+index e2d567d..1935fa6 100644
+--- a/src/mokutil.c
++++ b/src/mokutil.c
+@@ -238,11 +238,14 @@ efi_hash_size (const efi_guid_t *hash_type)
+ }
+ 
+ static uint32_t
+-signature_size (const efi_guid_t *hash_type)
++signature_size (const void *input)
+ {
++	efi_guid_t hash_type;
+ 	uint32_t hash_size;
+ 
+-	hash_size = efi_hash_size (hash_type);
++	memcpy(&hash_type, input, sizeof(efi_guid_t));
++
++	hash_size = efi_hash_size (&hash_type);
+ 	if (hash_size)
+ 		return (hash_size + sizeof(efi_guid_t));
+ 
+@@ -383,8 +386,9 @@ print_x509 (char *cert, int cert_size)
+ }
+ 
+ static int
+-print_hash_array (efi_guid_t *hash_type, void *hash_array, uint32_t array_size)
++print_hash_array (const void *input, void *hash_array, uint32_t array_size)
+ {
++	efi_guid_t hash_type;
+ 	uint32_t hash_size, remain;
+ 	uint32_t sig_size;
+ 	uint8_t *hash;
+@@ -395,7 +399,9 @@ print_hash_array (efi_guid_t *hash_type, void *hash_array, uint32_t array_size)
+ 		return -1;
+ 	}
+ 
+-	int rc = efi_guid_to_name(hash_type, &name);
++	memcpy(&hash_type, input, sizeof(efi_guid_t));
++
++	int rc = efi_guid_to_name(&hash_type, &name);
+ 	if (rc < 0 || isxdigit(name[0])) {
+ 		if (name)
+ 			free(name);
+@@ -403,7 +409,7 @@ print_hash_array (efi_guid_t *hash_type, void *hash_array, uint32_t array_size)
+ 		return -1;
+ 	}
+ 
+-	hash_size = efi_hash_size (hash_type);
++	hash_size = efi_hash_size (&hash_type);
+ 	sig_size = hash_size + sizeof(efi_guid_t);
+ 
+ 	printf ("  [%s]\n", name);
