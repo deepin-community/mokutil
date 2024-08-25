@@ -15,11 +15,11 @@ mokutil \- utility to manipulate machine owner keys
 .br
 \fBmokutil\fR [--import \fIkeylist\fR| -i \fIkeylist\fR]
         ([--hash-file \fIhashfile\fR | -f \fIhashfile\fR] | [--root-pw | -P] |
-         [--simple-hash | -s] | [--mokx | -X])
+         [--mokx | -X] | [--ca-check] | [--ignore-keyring])
 .br
 \fBmokutil\fR [--delete \fIkeylist\fR | -d \fIkeylist\fR]
         ([--hash-file \fIhashfile\fR | -f \fIhashfile\fR] | [--root-pw | -P] |
-         [--simple-hash | -s] | [--mokx |- X])
+         [--mokx |- X])
 .br
 \fBmokutil\fR [--revoke-import]
         ([--mokx | -X])
@@ -30,11 +30,9 @@ mokutil \- utility to manipulate machine owner keys
 \fBmokutil\fR [--export | -x]
 .br
 \fBmokutil\fR [--password | -p]
-        ([--hash-file \fIhashfile\fR | -f \fIhashfile\fR] | [--root-pw | -P] |
-         [--simple-hash | -s])
+        ([--hash-file \fIhashfile\fR | -f \fIhashfile\fR] | [--root-pw | -P])
 .br
 \fBmokutil\fR [--clear-password | -c]
-        ([--simple-hash | -s])
 .br
 \fBmokutil\fR [--disable-validation]
 .br
@@ -43,11 +41,11 @@ mokutil \- utility to manipulate machine owner keys
 \fBmokutil\fR [--sb-state]
 .br
 \fBmokutil\fR [--test-key \fIkeyfile\fR | -t \fIkeyfile\fR]
-        ([--mokx | -X])
+        ([--mokx | -X] | [--ca-check] | [--ignore-keyring])
 .br
 \fBmokutil\fR [--reset]
         ([--hash-file \fIhashfile\fR | -f \fIhashfile\fR] | [--root-pw | -P] |
-         [--simple-hash | -s] | [--mok | -X])
+         [--mok | -X])
 .br
 \fBmokutil\fR [--generate-hash=\fIpassword\fR | -g\fIpassword\fR]
 .br
@@ -57,13 +55,17 @@ mokutil \- utility to manipulate machine owner keys
 .br
 \fBmokutil\fR [--import-hash \fIhash\fR]
         ([--hash-file \fIhashfile\fR | -f \fIhashfile\fR] | [--root-pw | -P] |
-         [--simple-hash | -s] | [--mokx | -X])
+         [--mokx | -X])
 .br
 \fBmokutil\fR [--delete-hash \fIhash\fR]
         ([--hash-file \fIhashfile\fR | -f \fIhashfile\fR] | [--root-pw | -P] |
-         [--simple-hash | -s] | [--mokx | -X])
+         [--mokx | -X])
 .br
 \fBmokutil\fR [--set-verbosity (\fItrue\fR | \fIfalse\fR)]
+.br
+\fBmokutil\fR [--set-fallback-verbosity (\fItrue\fR | \fIfalse\fR)]
+.br
+\fBmokutil\fR [--set-fallback-noreboot (\fItrue\fR | \fIfalse\fR)]
 .br
 \fBmokutil\fR [--pk]
 .br
@@ -72,6 +74,12 @@ mokutil \- utility to manipulate machine owner keys
 \fBmokutil\fR [--db]
 .br
 \fBmokutil\fR [--dbx]
+.br
+\fBmokutil\fR [--list-sbat-revocations]
+.br
+\fBmokutil\fR [--set-sbat-policy (\fIlatest\fR | \fIprevious\fR | \fIdelete\fR)]
+.br
+\fBmokutil\fR [--timeout \fI-1,0..0x7fff\fR]
 .br
 
 .SH DESCRIPTION
@@ -90,11 +98,11 @@ List the keys to be enrolled
 List the keys to be deleted
 .TP
 \fB-i, --import\fR
-Collect the followed files and form a enrolling request to shim. The files must
+Collect the following files and form an enrolling request to shim. The files must
 be in DER format.
 .TP
 \fB-d, --delete\fR
-Collect the followed files and form a deleting request to shim. The files must be
+Collect the following files and form a deleting request to shim. The files must be
 in DER format.
 .TP
 \fB--revoke-import\fR
@@ -115,7 +123,7 @@ Clear the password for MokManager (MokPW)
 \fB--disable-validation\fR
 Disable the validation process in shim
 .TP
-\fB--enrolled-validation\fR
+\fB--enable-validation\fR
 Enable the validation process in shim
 .TP
 \fB--sb-state\fR
@@ -136,11 +144,6 @@ Use the password hash from a specific file
 \fB-P, --root-pw\fR
 Use the root password hash from /etc/shadow
 .TP
-\fB-s, --simple-hash\fR
-Use the old SHA256 password hash method to hash the password
-.br
-Note: --root-pw invalidates --simple-hash
-.TP
 \fB--ignore-db\fR
 Tell shim to not use the keys in db to verify EFI images
 .TP
@@ -150,16 +153,22 @@ Tell shim to use the keys in db to verify EFI images (default)
 \fB-X, --mokx\fR
 Manipulate the MOK blacklist (MOKX) instead of the MOK list
 .TP
-\fB-i, --import-hash\fR
+\fB--import-hash\fR
 Create an enrolling request for the hash of a key in DER format. Note that
 this is not the password hash.
 .TP
-\fB-d, --delete-hash\fR
-Create an deleting request for the hash of a key in DER format. Note that
+\fB--delete-hash\fR
+Create a deleting request for the hash of a key in DER format. Note that
 this is not the password hash.
 .TP
 \fB--set-verbosity\fR
 Set the SHIM_VERBOSE to make shim more or less verbose
+.TP
+\fB--set-fallback-verbosity\fR
+Set the FALLBACK_VERBOSE to make fallback more or less verbose
+.TP
+\fB--set-fallback-noreboot\fR
+Set the FB_NO_REBOOT to prevent fallback from automatically rebooting the system
 .TP
 \fB--pk\fR
 List the keys in the public Platform Key (PK)
@@ -172,4 +181,25 @@ List the keys in the secure boot signature store (db)
 .TP
 \fB--dbx\fR
 List the keys in the secure boot blacklist signature store (dbx)
+.TP
+\fB--list-sbat-revocations\fR
+List the entries in the Secure Boot Advanced Targeting store (SBAT)
+.TP
+\fB--set-sbat-policy (\fIlatest\fR | \fIprevious\fR | \fIdelete\fR)\fR
+Set the SbatPolicy UEFI Variable to have shim apply either the latest
+or the previous SBAT revocations.  If UEFI Secure Boot is disabled, then
+delete will reset the SBAT revocations to an empty revocation list.
+While latest and previous are persistent configuration, delete will be
+cleared by shim on the next boot whether or not it succeeds. The default
+behavior is for shim to apply the previous revocations.
+.TP
+\fB--timeout\fR
+Set the timeout for MOK prompt
+.TP
+\fB--ca-check\fR
+Check if the CA of the given key is already enrolled or blocked in the key
+databases.
+.TP
+\fB--ignore-keyring\fR
+Ignore the kernel builtin trusted keys keyring check when enrolling a key into MokList
 .TP

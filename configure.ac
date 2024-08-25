@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([mokutil], [0.4.0], [glin@suse.com])
+AC_INIT([mokutil], [0.6.0], [chingpang@gmail.com])
 AM_INIT_AUTOMAKE([1.11 -Wno-portability tar-ustar dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([src/mokutil.c])
 AC_CONFIG_HEADERS([config.h])
@@ -85,6 +85,7 @@ AC_CHECK_FUNCS([memset])
 
 PKG_CHECK_MODULES(OPENSSL, [openssl >= 0.9.8])
 PKG_CHECK_MODULES(EFIVAR, [efivar >= 0.12])
+PKG_CHECK_MODULES(LIBKEYUTILS, [libkeyutils >= 1.5])
 
 AC_ARG_WITH([bash-completion-dir],
     AS_HELP_STRING([--with-bash-completion-dir[=PATH]],

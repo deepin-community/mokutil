@@ -1,3 +1,22 @@
+mokutil (0.6.0-2) unstable; urgency=medium
+
+  * *Actually* switch to Arch: any to allow for more
+    architectures. :-( Closes: #987613.
+
+ -- Steve McIntyre <93sam@debian.org>  Wed, 15 Jun 2022 14:30:50 +0100
+
+mokutil (0.6.0-1) unstable; urgency=medium
+
+  * Move to new upstream version 0.6.0.
+    + Drop old patches, no longer needed.
+  * Switch to Arch: any to allow for more architectures.
+    Closes: #987613, #991933.
+  * Clean up old tweaks in debian/rules, no longer needed.
+  * Add build-dep on libkeyutils-dev, new dependency.
+  * Bump Standards-Version to 4.6.1, no changes needed.
+
+ -- Steve McIntyre <93sam@debian.org>  Sun, 12 Jun 2022 21:41:39 +0100
+
 mokutil (0.4.0-1) unstable; urgency=medium
 
   * Take mokutil under the wing of efi-team.
