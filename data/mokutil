@@ -1,4 +1,4 @@
-#!/bin/bash
+# mokutil(1) completion
 
 _mokutil()
 {
@@ -21,6 +21,14 @@ _mokutil()
 		return 0
 		;;
 	--set-verbosity)
+		COMPREPLY=( $( compgen -W "true false") )
+		return 0
+		;;
+	--set-fallback-verbosity)
+		COMPREPLY=( $( compgen -W "true false") )
+		return 0
+		;;
+	--set-fallback-noreboot)
 		COMPREPLY=( $( compgen -W "true false") )
 		return 0
 		;;
