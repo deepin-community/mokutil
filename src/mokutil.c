@@ -88,6 +88,7 @@
 #define TRUST_MOK          (1 << 27)
 #define UNTRUST_MOK        (1 << 28)
 #define SET_SBAT           (1 << 29)
+#define SET_SSP            (1 << 30)
 
 #define DEFAULT_CRYPT_METHOD SHA512_BASED
 #define DEFAULT_SALT_SIZE    SHA512_SALT_MAX
@@ -96,6 +97,10 @@
 
 static int force_ca_check;
 static int check_keyring;
+static int opt_verbose_listing;
+static int opt_list_all;
+
+static const char* const db_names[] = { "MokListRT", "MokListXRT", "PK", "KEK", "db", "dbx" };
 
 typedef struct {
 	uint32_t mok_toggle_state;
@@ -110,46 +115,54 @@ print_help ()
 	printf ("  mokutil OPTIONS [ARGS...]\n");
 	printf ("\n");
 	printf ("Options:\n");
-	printf ("  --help\t\t\t\tShow help\n");
-	printf ("  --list-enrolled\t\t\tList the enrolled keys\n");
-	printf ("  --list-new\t\t\t\tList the keys to be enrolled\n");
-	printf ("  --list-delete\t\t\t\tList the keys to be deleted\n");
-	printf ("  --import <der file...>\t\tImport keys\n");
-	printf ("  --delete <der file...>\t\tDelete specific keys\n");
+	printf ("  --help, -h\t\t\t\tShow help\n");
+	printf ("  --list-enrolled, -l\t\t\tList the enrolled keys\n");
+	printf ("  --list-new, -N\t\t\tList the keys to be enrolled\n");
+	printf ("  --list-delete, -D\t\t\tList the keys to be deleted\n");
+	printf ("  --import, -i <der file...>\t\tImport keys\n");
+	printf ("  --delete, -D <der file...>\t\tDelete specific keys\n");
 	printf ("  --revoke-import\t\t\tRevoke the import request\n");
 	printf ("  --revoke-delete\t\t\tRevoke the delete request\n");
-	printf ("  --export\t\t\t\tExport keys to files\n");
-	printf ("  --password\t\t\t\tSet MOK password\n");
-	printf ("  --clear-password\t\t\tClear MOK password\n");
+	printf ("  --export, -x\t\t\t\tExport keys to files\n");
+	printf ("  --password, -p\t\t\tSet MOK password\n");
+	printf ("  --clear-password, -c\t\t\tClear MOK password\n");
 	printf ("  --disable-validation\t\t\tDisable signature validation\n");
 	printf ("  --enable-validation\t\t\tEnable signature validation\n");
 	printf ("  --sb-state\t\t\t\tShow SecureBoot State\n");
-	printf ("  --test-key <der file>\t\t\tTest if the key is enrolled or not\n");
+	printf ("  --test-key, -t <der file>\t\tTest if the key is enrolled or not\n");
 	printf ("  --reset\t\t\t\tReset MOK list\n");
-	printf ("  --generate-hash[=password]\t\tGenerate the password hash\n");
+	printf ("  --generate-hash[=password], -g\tGenerate the password hash\n");
 	printf ("  --ignore-db\t\t\t\tIgnore DB for validation\n");
 	printf ("  --use-db\t\t\t\tUse DB for validation\n");
 	printf ("  --import-hash <hash>\t\t\tImport a hash into MOK or MOKX\n");
 	printf ("  --delete-hash <hash>\t\t\tDelete a hash in MOK or MOKX\n");
 	printf ("  --set-verbosity <true/false>\t\tSet the verbosity bit for shim\n");
-	printf ("  --set-fallback-verbosity <true/false>\t\tSet the verbosity bit for fallback\n");
-	printf ("  --set-fallback-noreboot <true/false>\t\tPrevent fallback from automatically rebooting\n");
+	printf ("  --set-fallback-verbosity <true/false>"
+			"\tSet the verbosity bit for fallback\n");
+	printf ("  --set-fallback-noreboot <true/false>"
+			"\tPrevent fallback from automatically rebooting\n");
 	printf ("  --trust-mok\t\t\t\tTrust MOK keys within the kernel keyring\n");
 	printf ("  --untrust-mok\t\t\t\tDo not trust MOK keys\n");
-	printf ("  --set-sbat-policy <latest/previous/delete>\t\tApply Latest, Previous, or Blank SBAT revocations\n");
+	printf ("  --set-sbat-policy <latest/automatic>"
+			"\tApply Latest or Automatic SBAT revocations\n");
+	printf ("  --set-ssp-policy <latest/automatic/delete>\n"
+			"\t\t\t\t\tApply Latest, Automatic, or delete SkuSiPolicy\n");
 	printf ("  --pk\t\t\t\t\tList the keys in PK\n");
 	printf ("  --kek\t\t\t\t\tList the keys in KEK\n");
 	printf ("  --db\t\t\t\t\tList the keys in db\n");
 	printf ("  --dbx\t\t\t\t\tList the keys in dbx\n");
 	printf ("  --timeout <-1,0..0x7fff>\t\tSet the timeout for MOK prompt\n");
-	printf ("  --list-sbat-revocations\t\t\t\tList the entries in SBAT\n");
+	printf ("  --list-sbat-revocations\t\tList the entries in SBAT\n");
 	printf ("\n");
 	printf ("Supplimentary Options:\n");
-	printf ("  --hash-file <hash file>\t\tUse the specific password hash\n");
-	printf ("  --root-pw\t\t\t\tUse the root password\n");
-	printf ("  --mokx\t\t\t\tManipulate the MOK blacklist\n");
+	printf ("  --hash-file, -f <hash file>\t\tUse the specific password hash\n");
+	printf ("  --root-pw, -P\t\t\t\tUse the root password\n");
+	printf ("  --mok, -m\t\t\t\tManipulate the MOK list\n");
+	printf ("  --mokx, -X\t\t\t\tManipulate the MOK blacklist\n");
 	printf ("  --ca-check\t\t\t\tCheck if CA of the key is enrolled/blocked\n");
 	printf ("  --ignore-keyring\t\t\tDon't check if the key is the kernel keyring\n");
+	printf ("  --short\t\t\t\tWhen listing keys print them in a concise form\n");
+	printf ("  --all, -a\t\t\t\tWhen listing keys print all databases\n");
 }
 
 static int
@@ -164,15 +177,26 @@ list_keys (const uint8_t *data, const size_t data_size)
 	}
 
 	for (unsigned int i = 0; i < mok_num; i++) {
-		printf ("[key %d]\n", i+1);
+		char *owner_str = NULL;
+		int ret;
+		if (opt_verbose_listing) {
+			printf ("[key %d]\n", i+1);
+
+			ret = efi_guid_to_str(&list[i].owner, &owner_str);
+			if (ret > 0) {
+				printf ("Owner: %s\n", owner_str);
+				free (owner_str);
+			}
+		}
+
 		efi_guid_t sigtype = list[i].header->SignatureType;
 		if (efi_guid_cmp (&sigtype, &efi_guid_x509_cert) == 0) {
-			print_x509 (list[i].mok, list[i].mok_size);
+			print_x509 (list[i].mok, list[i].mok_size, opt_verbose_listing);
 		} else {
 			print_hash_array (&sigtype,
-					  list[i].mok, list[i].mok_size);
+					  list[i].mok, list[i].mok_size, opt_verbose_listing);
 		}
-		if (i < mok_num - 1)
+		if (opt_verbose_listing && i < mok_num - 1)
 			printf ("\n");
 	}
 
@@ -194,7 +218,13 @@ list_keys_in_var (const char *var_name, const efi_guid_t guid)
 	if (ret >= 0) {
 		ret = list_keys (data, data_sz);
 		free(data);
-		return ret;
+		if (ret != -1)
+			return 0;
+		/*
+		 * If list_keys() returns -1, then we have problem
+		 * with the data from /sys/firmware/efi/mok-variables/.
+		 * Continue to try our luck with efivar/efivarfs.
+		 */
 	}
 
 	for (i = 0; i < SIZE_MAX; i++) {
@@ -376,7 +406,8 @@ get_pw_hash_from_file (const char *file, pw_crypt_t *pw_crypt)
 	bzero (string, BUF_SIZE);
 
 	while (read_len < BUF_SIZE) {
-		ssize_t rc = read (fd, string + read_len, BUF_SIZE - read_len);
+		ssize_t rc = read (fd, string + read_len,
+				   BUF_SIZE - read_len - 1);
 		if (rc < 0) {
 			if (errno == EINTR || errno == EAGAIN)
 				continue;
@@ -390,11 +421,6 @@ get_pw_hash_from_file (const char *file, pw_crypt_t *pw_crypt)
 		read_len += rc;
 	}
 	close (fd);
-
-	if (string[read_len] != '\0') {
-		fprintf (stderr, "corrupted string\n");
-		return -1;
-	}
 
 	if (decode_pass (string, pw_crypt) < 0) {
 		fprintf (stderr, "Failed to parse the string\n");
@@ -524,9 +550,9 @@ error:
 }
 
 static int
-is_one_duplicate (const efi_guid_t *type,
-		  const void *data, const uint32_t data_size,
-		  uint8_t *var_data, size_t var_data_size)
+check_one_duplicate (const efi_guid_t *type,
+		     const void *data, const uint32_t data_size,
+		     uint8_t *var_data, size_t var_data_size)
 {
 	uint32_t node_num;
 	MokListNode *list;
@@ -536,9 +562,8 @@ is_one_duplicate (const efi_guid_t *type,
 		return 0;
 
 	list = build_mok_list (var_data, var_data_size, &node_num);
-	if (list == NULL) {
-		goto done;
-	}
+	if (list == NULL)
+		return -1;
 
 	for (unsigned int i = 0; i < node_num; i++) {
 		efi_guid_t sigtype = list[i].header->SignatureType;
@@ -562,9 +587,7 @@ is_one_duplicate (const efi_guid_t *type,
 		}
 	}
 
-done:
-	if (list)
-		free (list);
+	free (list);
 
 	return ret;
 }
@@ -585,12 +608,17 @@ is_duplicate (const efi_guid_t *type,
 		size_t var_data_size = 0;
 		ret = mok_get_variable(db_name, &var_data, &var_data_size);
 		if (ret >= 0) {
-			ret = is_one_duplicate(type, data, data_size,
-					       var_data, var_data_size);
+			ret = check_one_duplicate(type, data, data_size,
+						  var_data, var_data_size);
 			if (ret >= 0) {
 				free (var_data);
 				return ret;
 			}
+			/*
+			 * If check_duplicate() returns -1, then we have problem
+			 * with the data from /sys/firmware/efi/mok-variables/.
+			 * Continue to try our luck with efivar/efivarfs.
+			 */
 			var_data = NULL;
 			var_data_size = 0;
 		}
@@ -611,8 +639,8 @@ is_duplicate (const efi_guid_t *type,
 		if (ret < 0)
 			return 0;
 
-		ret = is_one_duplicate(type, data, data_size,
-				       var_data, var_data_size);
+		ret = check_one_duplicate(type, data, data_size,
+					  var_data, var_data_size);
 		free (var_data);
 		/*
 		 * If ret is < 0, the next one will error as well.
@@ -799,7 +827,7 @@ print_skip_message (const char *filename, const void *mok,
 			printf ("%s is blocked in dbx\n", filename);
 		else if (is_duplicate (&efi_guid_x509_cert, mok, mok_size,
 				       &efi_guid_shim, "MokListXRT"))
-			printf ("%s is blocked in MokListXRT\n", filename);
+			printf ("%s is blocked in MokListX\n", filename);
 		break;
 	case DELETE_MOK:
 		if (!is_duplicate (&efi_guid_x509_cert, mok, mok_size,
@@ -1197,6 +1225,8 @@ export_db_keys (const DBName db_name)
 		case DBX:
 			guid = efi_guid_security;
 			break;
+		case _DB_NAME_MAX:
+			return -1;
 	};
 
 	db_var_name = get_db_var_name(db_name);
@@ -1216,6 +1246,7 @@ export_db_keys (const DBName db_name)
 
 	list = build_mok_list (data, data_size, &mok_num);
 	if (list == NULL) {
+		free(data);
 		return -1;
 	}
 
@@ -1750,27 +1781,35 @@ list_db (const DBName db_name)
 			return list_keys_in_var ("db", efi_guid_security);
 		case DBX:
 			return list_keys_in_var ("dbx", efi_guid_security);
+		case _DB_NAME_MAX:
+			return -1;
 	}
 
 	return -1;
 }
 
 static int
-manage_sbat (const uint8_t sbat_policy)
+manage_policy (unsigned int command, const uint8_t policy)
 {
-	if (sbat_policy) {
+	const char *varname;
+	if (command == SET_SBAT)
+		varname = "SbatPolicy";
+	if (command == SET_SSP)
+		varname = "SSPPolicy";
+
+	if (policy) {
 		uint32_t attributes = EFI_VARIABLE_NON_VOLATILE
 				      | EFI_VARIABLE_BOOTSERVICE_ACCESS
 				      | EFI_VARIABLE_RUNTIME_ACCESS;
-		if (efi_set_variable (efi_guid_shim, "SbatPolicy",
-				      (uint8_t *)&sbat_policy,
-				      sizeof (sbat_policy),
+		if (efi_set_variable (efi_guid_shim, varname,
+				      (uint8_t *)&policy,
+				      sizeof (policy),
 				      attributes, S_IRUSR | S_IWUSR) < 0) {
 			fprintf (stderr, "Failed to set SbatPolicy\n");
 			return -1;
 		}
 	} else {
-		return test_and_delete_mok_var ("SbatPolicy");
+		return test_and_delete_mok_var (varname);
 	}
 	return 0;
 }
@@ -1791,18 +1830,14 @@ main (int argc, char *argv[])
 	uint8_t verbosity = 0;
 	uint8_t fb_verbosity = 0;
 	uint8_t fb_noreboot = 0;
-	uint8_t sbat_policy = 0;
+	uint8_t policy = 0;
 	DBName db_name = MOK_LIST_RT;
 	int ret = -1;
 	int sb_check;
 
 	force_ca_check = 0;
 	check_keyring = 1;
-
-	if (!efi_variables_supported ()) {
-		fprintf (stderr, "EFI variables are not supported on this system\n");
-		exit (1);
-	}
+	opt_verbose_listing = 1;
 
 	while (1) {
 		static struct option long_options[] = {
@@ -1837,6 +1872,7 @@ main (int argc, char *argv[])
 			{"trust-mok",          no_argument,       0, 0  },
 			{"untrust-mok",        no_argument,       0, 0  },
 			{"set-sbat-policy",    required_argument, 0, 0  },
+			{"set-ssp-policy",     required_argument, 0, 0  },
 			{"pk",                 no_argument,       0, 0  },
 			{"kek",                no_argument,       0, 0  },
 			{"db",                 no_argument,       0, 0  },
@@ -1847,11 +1883,13 @@ main (int argc, char *argv[])
 			{"ca-check",           no_argument,       0, 0  },
 			{"ignore-keyring",     no_argument,       0, 0  },
 			{"version",            no_argument,       0, 'v'},
+			{"short",              no_argument,       0, 0  },
+			{"all",                no_argument,       0, 'a'},
 			{0, 0, 0, 0}
 		};
 
 		int option_index = 0;
-		c = getopt_long (argc, argv, "cd:f:g::hi:lmpst:xDNPXv",
+		c = getopt_long (argc, argv, "acd:f:g::hi:lmpt:xDNPXv",
 				 long_options, &option_index);
 
 		if (c == -1)
@@ -1929,11 +1967,23 @@ main (int argc, char *argv[])
 			} else if (strcmp (option, "set-sbat-policy") == 0) {
 				command |= SET_SBAT;
 				if (strcmp (optarg, "latest") == 0)
-					sbat_policy = 1;
-				else if (strcmp (optarg, "previous") == 0)
-					sbat_policy = 2;
+					policy = 1;
+				else if ((strcmp (optarg, "previous") == 0) ||
+					 (strcmp (optarg, "automatic") == 0))
+					policy = 2;
 				else if (strcmp (optarg, "delete") == 0)
-					sbat_policy = 3;
+					policy = 3;
+				else
+					command |= HELP;
+			} else if (strcmp (option, "set-ssp-policy") == 0) {
+				command |= SET_SSP;
+				if (strcmp (optarg, "latest") == 0)
+					policy = 1;
+				else if ((strcmp (optarg, "previous") == 0) ||
+					 (strcmp (optarg, "automatic") == 0))
+					policy = 2;
+				else if (strcmp (optarg, "delete") == 0)
+					policy = 3;
 				else
 					command |= HELP;
 			} else if (strcmp (option, "pk") == 0) {
@@ -1971,8 +2021,13 @@ main (int argc, char *argv[])
 				force_ca_check = 1;
 			} else if (strcmp (option, "ignore-keyring") == 0) {
 				check_keyring = 0;
+			} else if (strcmp (option, "short") == 0) {
+				opt_verbose_listing = 0;
 			}
 
+			break;
+		case 'a':
+			opt_list_all = 1;
 			break;
 		case 'l':
 			command |= LIST_ENROLLED;
@@ -2015,6 +2070,10 @@ main (int argc, char *argv[])
 			for (i = 0; i < total; i++) {
 				f_ind = i + optind - 1;
 				files[i] = malloc (strlen(argv[f_ind]) + 1);
+				if (files[i] == NULL) {
+					fprintf (stderr, "Could not allocate space: %m\n");
+					exit(1);
+				}
 				strcpy (files[i], argv[f_ind]);
 			}
 
@@ -2084,18 +2143,23 @@ main (int argc, char *argv[])
 			break;
 		case 'v':
 			printf ("%s\n", VERSION);
+			ret = 0;
 			goto out;
 		case 'h':
 		case '?':
+		default:
 			command |= HELP;
 			break;
-		default:
-			abort ();
 		}
 	}
 
 	if (pw_hash_file && use_root_pw)
 		command |= HELP;
+
+	if (!(command & HELP) && !efi_variables_supported ()) {
+		fprintf (stderr, "EFI variables are not supported on this system\n");
+		exit (1);
+	}
 
 	if (db_name != MOK_LIST_RT && !(command & ~MOKX))
 		command |= LIST_ENROLLED;
@@ -2123,7 +2187,18 @@ main (int argc, char *argv[])
 	switch (command) {
 		case LIST_ENROLLED:
 		case LIST_ENROLLED | MOKX:
-			ret = list_db (db_name);
+			if (opt_list_all) {
+				ret = 0;
+				for (DBName db = MOK_LIST_RT; db < _DB_NAME_MAX; ++db) {
+					int r;
+					printf("[%s]\n", db_names[db]);
+					r = list_db (db);
+					if (r)
+						ret = r;
+				}
+			} else {
+				ret = list_db (db_name);
+			}
 			break;
 		case LIST_NEW:
 			ret = list_keys_in_var ("MokNew", efi_guid_shim);
@@ -2243,10 +2318,12 @@ main (int argc, char *argv[])
 			ret = print_var_content ("SbatLevelRT", efi_guid_shim);
 			break;
 		case SET_SBAT:
-			ret = manage_sbat(sbat_policy);
+		case SET_SSP:
+			ret = manage_policy(command, policy);
 			break;
 		default:
 			print_help ();
+			ret = 0;
 			break;
 	}
 

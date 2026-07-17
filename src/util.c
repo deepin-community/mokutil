@@ -57,22 +57,21 @@ mok_get_variable(const char *name, uint8_t **datap, size_t *data_sizep)
 		return fd;
 
 	rc = fstat(fd, &sb);
-	if (rc < 0) {
-err_close:
-		close(fd);
-		return rc;
-	}
+	if (rc < 0)
+		goto done;
 
 	if (sb.st_size == 0) {
 		errno = ENOENT;
 		rc = -1;
-		goto err_close;
+		goto done;
 	}
 
 	bufsz = sb.st_size;
 	buf = calloc(1, bufsz);
-	if (!buf)
-		goto err_close;
+	if (!buf) {
+		rc = -1;
+		goto done;
+	}
 
 	while (pos < bufsz) {
 		ssz = read(fd, &buf[pos], bufsz - pos);
@@ -82,15 +81,18 @@ err_close:
 			    errno == EINTR)
 				continue;
 			free(buf);
-			goto err_close;
+			rc = -1;
+			goto done;
 		}
 
 		pos += ssz;
 	}
 	*datap = buf;
 	*data_sizep = pos;
-
-	return 0;
+	rc = 0;
+done:
+	close(fd);
+	return rc;
 }
 
 MokListNode*
@@ -159,6 +161,7 @@ build_mok_list (const void *data, const uintptr_t data_size,
 		}
 
 		list[count].header = CertList;
+		list[count].owner  = Cert->SignatureOwner;
 		if (efi_guid_cmp (&sigtype, &efi_guid_x509_cert) == 0) {
 			/* X509 certificate */
 			list[count].mok_size = CertList->SignatureSize -
@@ -295,8 +298,10 @@ delete_data_from_req_var (const MokRequest req, const efi_guid_t *type,
 	}
 
 	/* the key or hash is not in this list */
-	if (start == NULL)
-		return 0;
+	if (start == NULL) {
+		ret = 0;
+		goto done;
+	}
 
 	/* all keys are removed */
 	if (total == 0) {

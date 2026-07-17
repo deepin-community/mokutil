@@ -1,3 +1,14 @@
+mokutil (0.7.2-1) unstable; urgency=medium
+
+  * Move to new upstream version 0.7.2
+    Multiple fixes including:
+    + Show usage instead of aborting on bad flags. Closes: #1088697
+  * Set Multi-Arch: foreign on the mokutil binary. Closes: #1100819
+  * Update copyright years in d/copyright
+  * Tweak build-deps
+
+ -- Steve McIntyre <93sam@debian.org>  Sun, 23 Mar 2025 23:58:52 +0000
+
 mokutil (0.6.0-2) unstable; urgency=medium
 
   * *Actually* switch to Arch: any to allow for more
