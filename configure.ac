@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([mokutil], [0.6.0], [chingpang@gmail.com])
+AC_INIT([mokutil], [0.7.2], [glin@suse.com])
 AM_INIT_AUTOMAKE([1.11 -Wno-portability tar-ustar dist-bzip2 no-dist-gzip])
 AC_CONFIG_SRCDIR([src/mokutil.c])
 AC_CONFIG_HEADERS([config.h])
@@ -10,6 +10,7 @@ AC_CONFIG_HEADERS([config.h])
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
+PKG_PROG_PKG_CONFIG
 
 # Checks for libraries.
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug], [turn on debug]), CFLAGS="$CFLAGS -g")
@@ -95,7 +96,7 @@ AC_ARG_WITH([bash-completion-dir],
 
 if test "x$with_bash_completion_dir" = "xyes"; then
     PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
-        [BASH_COMPLETION_DIR="`pkg-config --variable=completionsdir bash-completion`"],
+        [BASH_COMPLETION_DIR="`$PKG_CONFIG --variable=completionsdir bash-completion`"],
         [BASH_COMPLETION_DIR="$datadir/bash-completion/completions"])
 else
     BASH_COMPLETION_DIR="$with_bash_completion_dir"
